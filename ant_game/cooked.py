@@ -1,8 +1,11 @@
 import pygame
+import random
 
 width = 1920
 height = 1080
-
+r = random.randint(0, 255)
+g = random.randint(0, 255)
+b = random.randint(0, 255)
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("поле")
 
@@ -10,7 +13,7 @@ cell_size = 20
 rows = height // cell_size
 cols = width // cell_size
 
-black = (0, 0, 0)
+black = (r, g, b)
 white = (255, 255, 255)
 
 def draw_grid():
