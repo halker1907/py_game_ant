@@ -1,126 +1,97 @@
 import pygame
 import sys
-import random
-ONE = random.randint(0, 255)
-TWO = random.randint(0, 255)
-THRE = random.randint(0, 255)
-
-class Field:
-    def __init__(self, screen, cell_size, num_cells_x, num_cells_y):
-        self.screen = screen
-        self.cell_size = cell_size
-        self.num_cells_x = num_cells_x
-        self.num_cells_y = num_cells_y
-        self.player = Player(self.cell_size, self.num_cells_x, self.num_cells_y, num_cells_x, num_cells_y)
-        self.anthill = Anthill(self.cell_size, self.num_cells_x, self.num_cells_y, num_cells_x, num_cells_y)
-        self.font = pygame.font.Font(None, self.cell_size)
-
-    def render(self, offset_x, offset_y):
-        for x in range(self.num_cells_x):
-            for y in range(self.num_cells_y):
-                cell_surface = pygame.Surface((self.cell_size, self.cell_size))
-                cell_surface.fill((ONE, TWO, THRE))
-                pygame.draw.rect(cell_surface, (0, 0, 0), cell_surface.get_rect(), 2)
-
-                cell_rect = cell_surface.get_rect(
-                    topleft=(offset_x + x * self.cell_size, offset_y + y * self.cell_size)
-                )
-
-                self.screen.blit(cell_surface, cell_rect.topleft)
-
-        # Отрисовка игрока
-        player_text = self.font.render("P", True, (1, 60, 20))
-        player_rect = player_text.get_rect(
-            center=(offset_x + (self.player.x + 0.5) * self.cell_size,
-                    offset_y + (self.player.y + 0.5) * self.cell_size)
-        )
-        self.screen.blit(player_text, player_rect.topleft)
-
-        # Oтрисовка муравейника
-        anthill_text = self.font.render("A", True, (128, 128, 0))
-        anthill_rect = anthill_text.get_rect(
-            center=(offset_x + (self.anthill.x + 0.5) * self.cell_size,
-                    offset_y + (self.anthill.y + 0.5) * self.cell_size)
-        )
-        self.screen.blit(anthill_text, anthill_rect.topleft)
-
-
-class Player:
-    def __init__(self, cell_size, num_cells_x, num_cells_y, field_num_cells_x, field_num_cells_y):
-        self.cell_size = cell_size
-        self.x = random.randint(0, num_cells_x - 1)
-        self.y = random.randint(0, num_cells_y - 1)
-        self.num_cells_x = field_num_cells_x
-        self.num_cells_y = field_num_cells_y
-
-    def move(self, dx, dy):
-        self.x = (self.x + dx) % self.num_cells_x
-        self.y = (self.y + dy) % self.num_cells_y
-
-class Anthill:
-    def __init__(self, cell_size, num_cells_x, num_cells_y, field_num_cells_x, field_num_cells_y):
-        self.cell_size = cell_size
-        self.x = random.randint(0, num_cells_x - 1)
-        self.y = random.randint(0, num_cells_y - 1)
-        self.num_cells_x = field_num_cells_x
-        self.num_cells_y = field_num_cells_y
-
-
-class Window:
-    def __init__(self):
-        pygame.init()
-        self.screen = pygame.display.set_mode((1920, 1080))
-        self.clock = pygame.time.Clock()
-        self.is_running = True
-        self.cell_size = 50
-        self.num_cells_x = 10
-        self.num_cells_y = 10
-        self.offset_x = 0
-        self.offset_y = 0
-
-        self.field = Field(self.screen, self.cell_size, self.num_cells_x, self.num_cells_y)
-
-    def run(self):
-        while self.is_running:
-            self.clock.tick(60)
-            self.handle_events()
-            self.update()
-            self.render()
-
-    def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.is_running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.is_running = False
-                elif event.key == pygame.K_UP:
-                    self.field.player.move(0, -1)
-                elif event.key == pygame.K_DOWN:
-                    self.field.player.move(0, 1)
-                elif event.key == pygame.K_LEFT:
-                    self.field.player.move(-1, 0)
-                elif event.key == pygame.K_RIGHT:
-                    self.field.player.move(1, 0)
-
-    def update(self):
-        pass
-
-    def render(self):
-        self.screen.fill((255, 255, 255))
-        self.offset_x = (self.screen.get_width() - self.num_cells_x * self.cell_size) // 2
-        self.offset_y = (self.screen.get_height() - self.num_cells_y * self.cell_size) // 2
-
-        self.field.render(self.offset_x, self.offset_y)
-
-        pygame.display.flip()
-
-    def quit_game(self):
-        pygame.quit()
-        sys.exit()
-
-
-if __name__ == "__main__":
-    game = Window()
-    game.run()
-    game.quit_game()
+ 
+WIN_WIDTH = 800
+WIN_HEIGHT = 600
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+ 
+ 
+class Rocket:
+    # ширина и высота у всех экземпляров-ракет будут одинаковы
+    width_rocket = 20
+    height_rocket = 50
+ 
+    def __init__(self, surface, color):
+        """Конструктору необходимо передать поверхность,
+        по которой будет летать ракета и цвет самой ракеты"""
+        self.surf = surface
+        self.color = color
+        # Методы поверхности get_width() и get_height()
+        # возвращают ее размеры.
+        # Координаты верхнего левого угла ракеты устанавливаются так,
+        # чтобы ракета летела ровно по центру поверхности
+        # по горизонтали и появлялась снизу.
+        self.x = surface.get_width()//2 - Rocket.width_rocket//2
+        self.y = surface.get_height()
+ 
+    def fly(self):
+        """Вызов метода fly() поднимает ракету на 3 пикселя.
+        Если ракета скрывается вверху, она снова появится снизу"""
+        pygame.draw.rect(self.surf, self.color,
+                         (self.x, self.y,
+                          Rocket.width_rocket,
+                          Rocket.height_rocket))
+        self.y -= 3
+        # Если координата y ракеты уходит за -50,
+        # то значит она полностью скрылась вверху.
+        if self.y < -Rocket.height_rocket:
+            # Поэтому перебрасываем ракету
+            # под нижнюю границу поверхности.
+            self.y = self.surf.get_height()
+ 
+ 
+sc = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+ 
+# левая белая поверхность, равная половине окна
+surf_left = pygame.Surface((WIN_WIDTH//2, WIN_HEIGHT))
+surf_left.fill(WHITE)
+ 
+# правая черная поверхность, равная другой половине окна
+surf_right = pygame.Surface((WIN_WIDTH//2, WIN_HEIGHT))
+ 
+# размещаем поверхности на главной,
+# указывая координаты их верхних левых углов
+sc.blit(surf_left, (0, 0))
+sc.blit(surf_right, (WIN_WIDTH//2, 0))
+ 
+# создаем черную ракету для левой
+# и белую - для правой поверхности
+rocket_left = Rocket(surf_left, BLACK)
+rocket_right = Rocket(surf_right, WHITE)
+ 
+# какая половина активна, до первого клика - никакая
+active_left = False
+active_right = False
+ 
+while 1:
+    for i in pygame.event.get():
+        if i.type == pygame.QUIT:
+            sys.exit()
+        elif i.type == pygame.MOUSEBUTTONUP:
+            # если координата X клика меньше половины окна,
+            # т. е. клик произошел в левой половине ...
+            if i.pos[0] < WIN_WIDTH//2:
+                # то активируем левую, отключаем правую
+                active_left = True
+                active_right = False
+            elif i.pos[0] > WIN_WIDTH//2:
+                # иначе - наоборот
+                active_right = True
+                active_left = False
+ 
+    if active_left:
+        # Если активна левая поверхность,
+        # то заливаем только ее цветом,
+        surf_left.fill(WHITE)
+        # поднимаем ракету,
+        rocket_left.fly()
+        # заново отрисовываем левую поверхность на главной.
+        sc.blit(surf_left, (0, 0))
+    elif active_right:
+        surf_right.fill(BLACK)
+        rocket_right.fly()
+        sc.blit(surf_right, (WIN_WIDTH//2, 0))
+ 
+    pygame.display.update()
+    pygame.time.delay(20)

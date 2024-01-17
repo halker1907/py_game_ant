@@ -1,40 +1,152 @@
 import pygame
 import random
 
-width = 1920
-height = 1080
-r = random.randint(0, 255)
-g = random.randint(0, 255)
-b = random.randint(0, 255)
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("поле")
+R = random.randint(0, 255)
+G = random.randint(0, 255)
+B = random.randint(0, 255)
+R_P = random.randint(0, 255)
+G_P = random.randint(0, 255)
+B_P = random.randint(0, 255)
+R_A = random.randint(0, 255)
+G_A = random.randint(0, 255)
+B_A = random.randint(0, 255)
 
-cell_size = 20
-rows = height // cell_size
-cols = width // cell_size
 
-black = (r, g, b)
-white = (255, 255, 255)
 
-def draw_grid():
-    for x in range(0, width, cell_size):
-        for y in range(0, height, cell_size):
-            rect = pygame.Rect(x, y, cell_size, cell_size)
-            pygame.draw.rect(screen, white, rect, 1)
+class Player:
+    def __init__(self, cell_size, num_cells_x, num_cells_y, field_num_cells_x, field_num_cells_y):
+        self.cell_size = cell_size
+        self.x = random.randint(0, num_cells_x - 1)
+        self.y = random.randint(0, num_cells_y - 1)
+        self.num_cells_x = field_num_cells_x
+        self.num_cells_y = field_num_cells_y
 
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
+    def move(self, dx, dy, anthill_positions):
+        new_x = (self.x + dx) % self.num_cells_x
+        new_y = (self.y + dy) % self.num_cells_y
+
+        if (new_x, new_y) not in anthill_positions:
+            self.x = new_x
+            self.y = new_y
+
+class Anthill:
+    def __init__(self, cell_size, num_cells_x, num_cells_y, existing_positions):
+        self.cell_size = cell_size
+        self.num_cells_x = num_cells_x
+        self.num_cells_y = num_cells_y
+        self.positions = self.generate_random_positions(existing_positions)
+
+    def generate_random_positions(self, existing_positions):
+        positions = set()
+        num_anthills = random.randint(1, 4)
+        while len(positions) < num_anthills:
+            x = random.randint(0, self.num_cells_x - 1)
+            y = random.randint(0, self.num_cells_y - 1)
+            position = (x, y)
+            if position not in existing_positions and position not in positions:
+                positions.add(position)
+        return positions
+
+class Field:
+    def __init__(self, screen, cell_size, num_cells_x, num_cells_y):
+        self.cell_size = cell_size
+        self.screen = screen
+        self.num_cells_x = num_cells_x
+        self.num_cells_y = num_cells_y
+        self.r = random.randint(0, 255)
+        self.g = random.randint(0, 255)
+        self.b = random.randint(0, 255)
+        self.player = Player(self.cell_size, self.num_cells_x, self.num_cells_y, num_cells_x, num_cells_y)
+        self.anthill = Anthill(self.cell_size, self.num_cells_x, self.num_cells_y, {(self.player.x, self.player.y)})
+        self.font = pygame.font.Font(None, self.cell_size)
+        pygame.display.set_caption("поле")
+
+    def render(self, offset_x, offset_y):
+        for x in range(self.num_cells_x):
+            for y in range(self.num_cells_y):
+                cell_surface = pygame.Surface((self.cell_size, self.cell_size))
+                cell_surface.fill((R, G, B))
+                pygame.draw.rect(cell_surface, (0, 0, 0), cell_surface.get_rect(), 2)
+
+                cell_rect = cell_surface.get_rect(
+                    topleft=(offset_x + x * self.cell_size, offset_y + y * self.cell_size)
+                )
+
+                self.screen.blit(cell_surface, cell_rect.topleft)
+
+        # Отрисовка игрока
+        player_text = self.font.render("P", True, (R_P, G_P, B_P))
+        player_rect = player_text.get_rect(
+            center=(offset_x + (self.player.x + 0.5) * self.cell_size,
+                    offset_y + (self.player.y + 0.5) * self.cell_size)
+        )
+        self.screen.blit(player_text, player_rect.topleft)
+
+        # Отрисовка муравейников
+        for position in self.anthill.positions:
+            anthill_text = self.font.render("A", True, (R_A + 9, G_A + 9, B_A + 9))
+            anthill_rect = anthill_text.get_rect(
+                center=(offset_x + (position[0] + 0.5) * self.cell_size,
+                        offset_y + (position[1] + 0.5) * self.cell_size)
+            )
+            self.screen.blit(anthill_text, anthill_rect.topleft)
+
+class Window:
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((1920, 1080))
+        self.clock = pygame.time.Clock()
+        self.is_running = True
+        self.cell_size = 50
+        self.num_cells_x = 10
+        self.num_cells_y = 10
+        self.offset_x = 0
+        self.offset_y = 0
+
+        self.field = Field(self.screen, self.cell_size, self.num_cells_x, self.num_cells_y)
+
+    def run(self):
+        while self.is_running:
+            self.clock.tick(60)
+            self.handle_events()
+            self.update()
+            self.render()
+
+    def handle_events(self):
+        anthill_positions = self.field.anthill.positions
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.is_running = False
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    running = False
-    
-    screen.fill(black)
-    draw_grid()
+                    self.is_running = False
+                elif event.key == pygame.K_UP:
+                    self.field.player.move(0, -1, anthill_positions)
+                elif event.key == pygame.K_DOWN:
+                    self.field.player.move(0, 1, anthill_positions)
+                elif event.key == pygame.K_LEFT:
+                    self.field.player.move(-1, 0, anthill_positions)
+                elif event.key == pygame.K_RIGHT:
+                    self.field.player.move(1, 0, anthill_positions)
 
-    pygame.display.flip()
+    def update(self):
+        pass
 
-pygame.quit()
-        
+    def render(self):
+        self.screen.fill((255, 255, 255))
+        self.offset_x = (self.screen.get_width() - self.num_cells_x * self.cell_size) // 2
+        self.offset_y = (self.screen.get_height() - self.num_cells_y * self.cell_size) // 2
+
+        self.field.render(self.offset_x, self.offset_y)
+
+        pygame.display.flip()
+
+    def quit_game(self):
+        pygame.quit()
+        sys.exit()
+
+
+if __name__ == '__main__':
+    game = Window()
+    game.run()
+    game.quit_game()
