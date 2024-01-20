@@ -10,7 +10,9 @@ B_P = random.randint(0, 255)
 R_A = random.randint(0, 255)
 G_A = random.randint(0, 255)
 B_A = random.randint(0, 255)
-
+ANTS_IN_ANTHILL_MAX = 10
+IMAGE_ANHILL = pygame.image.load('house_ant.png')
+IMAGE_PLAYER = pygame.image.load('anteater.png')
 
 
 class Player:
@@ -47,6 +49,57 @@ class Anthill:
                 positions.add(position)
         return positions
 
+class Ant:
+    def __init__(self, cell_size, num_cells_x, num_cells_y, field_num_cells_x, field_num_cells_y):
+        self.cell_size = cell_size
+        self.x = random.randint(0, num_cells_x - 1)
+        self.y = random.randint(0, num_cells_y - 1)
+        self.num_cells_x = field_num_cells_x
+        self.num_cells_y = field_num_cells_y
+        self.direction = random.choice(['up', 'down', 'left', 'right'])
+        self.ants_counter = ANTS_IN_ANTHILL_MAX
+
+
+    def move_ants(self):
+        if self.direction == 'up':
+            self.ant_y -= 1
+        if self.direction == 'down':
+            self.ant_y += 1
+        if self.direction == 'left':
+            self.ant_x -= 1
+        if self.direction == 'right':
+            self.ant_x += 1
+
+    def spawn_ants(self):
+        for anthill in self.anthills:
+            if anthill.ants_counter > 0 and anthill.spawn_counter == 0:
+                # Получаем координаты муравейника
+                anthill_x, anthill_y = anthill.x, anthill.y
+
+                # Получаем координаты всех соседних клеток вокруг муравейника
+                neighbors = [
+                    (anthill_y - 1, anthill_x - 1), (anthill_y - 1, anthill_x), (anthill_y - 1, anthill_x + 1),
+                    (anthill_y, anthill_x - 1), (anthill_y, anthill_x + 1),
+                    (anthill_y + 1, anthill_x - 1), (anthill_y + 1, anthill_x), (anthill_y + 1, anthill_x + 1)
+                ]
+
+                # Фильтруем только пустые клетки
+                empty_neighbors = [(y, x) for y, x in neighbors if 0 <= y < self.rows and 0 <= x < self.cols and not self.cells[y][x].content]
+
+                # Выбираем случайную пустую клетку, если они есть
+                if empty_neighbors:
+                    ant_y, ant_x = random.choice(empty_neighbors)
+                    ant = Ant(y=ant_y, x=ant_x)
+                    self.cells[ant_y][ant_x].content = ant
+                    anthill.ants_counter -= 1
+                    anthill.spawn_counter = 1
+
+            if anthill.spawn_counter > 0:
+                anthill.spawn_counter += 1
+                if anthill.spawn_counter > 5:
+                    anthill.spawn_counter = 0
+
+
 class Field:
     def __init__(self, screen, cell_size, num_cells_x, num_cells_y):
         self.cell_size = cell_size
@@ -58,6 +111,7 @@ class Field:
         self.b = random.randint(0, 255)
         self.player = Player(self.cell_size, self.num_cells_x, self.num_cells_y, num_cells_x, num_cells_y)
         self.anthill = Anthill(self.cell_size, self.num_cells_x, self.num_cells_y, {(self.player.x, self.player.y)})
+        self.ant = Ant(self.cell_size, self.num_cells_x, self.num_cells_y, num_cells_x, num_cells_y)
         self.font = pygame.font.Font(None, self.cell_size)
         pygame.display.set_caption("поле")
 
@@ -75,21 +129,27 @@ class Field:
                 self.screen.blit(cell_surface, cell_rect.topleft)
 
         # Отрисовка игрока
-        player_text = self.font.render("P", True, (R_P, G_P, B_P))
-        player_rect = player_text.get_rect(
-            center=(offset_x + (self.player.x + 0.5) * self.cell_size,
-                    offset_y + (self.player.y + 0.5) * self.cell_size)
+        scale_p = pygame.transform.scale(
+        IMAGE_PLAYER, (IMAGE_PLAYER.get_width() // 9,
+            IMAGE_PLAYER.get_height() // 9))
+        flip = pygame.transform.flip(IMAGE_PLAYER, True, False)
+        player_rect = IMAGE_PLAYER.get_rect(
+            center=(offset_x + (self.player.x + 5.1) * self.cell_size,
+                    offset_y + (self.player.y + 5.3) * self.cell_size)
         )
-        self.screen.blit(player_text, player_rect.topleft)
+        self.screen.blit(scale_p, player_rect.topleft)
 
         # Отрисовка муравейников
         for position in self.anthill.positions:
-            anthill_text = self.font.render("A", True, (R_A + 9, G_A + 9, B_A + 9))
-            anthill_rect = anthill_text.get_rect(
-                center=(offset_x + (position[0] + 0.5) * self.cell_size,
-                        offset_y + (position[1] + 0.5) * self.cell_size)
+            scale = pygame.transform.scale(
+            IMAGE_ANHILL, (IMAGE_ANHILL.get_width() // 10,
+                IMAGE_ANHILL.get_height() // 10))
+            anthill_rect = IMAGE_ANHILL.get_rect(
+                center=(offset_x + (position[0] + 5.1) * self.cell_size,
+                        offset_y + (position[1] + 5.2) * self.cell_size)
             )
-            self.screen.blit(anthill_text, anthill_rect.topleft)
+            self.screen.blit(scale, anthill_rect.topleft)
+
 
 class Window:
     def __init__(self):
