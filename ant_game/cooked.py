@@ -1,6 +1,7 @@
 import pygame
 import random
 import sys
+from pygame.locals import *
 
 R = random.randint(0, 255)
 G = random.randint(0, 255)
@@ -28,10 +29,22 @@ class Player:
             self.y = new_y
 
 class Anthill:
-    def __init__(self, cell_size, num_cells_x, num_cells_y):
+    def __init__(self, cell_size, num_cells_x, num_cells_y, existing_positions):
         self.cell_size = cell_size
         self.num_cells_x = num_cells_x
         self.num_cells_y = num_cells_y
+        self.positions = self.generate_random_positions(existing_positions)
+
+    def generate_random_positions(self, existing_positions):
+        positions = set()
+        num_anthills = random.randint(1, 4)
+        while len(positions) < num_anthills:
+            x_anthill = random.randint(0, self.num_cells_x - 1)
+            y_anthill = random.randint(0, self.num_cells_y - 1)
+            position = (x_anthill, y_anthill)
+            if position not in existing_positions and position not in positions:
+                positions.add(position)
+        return positions
 
 
 class Ant:
@@ -39,32 +52,9 @@ class Ant:
         self.cell_size = cell_size
         self.num_cells_x = num_cells_x
         self.num_cells_y = num_cells_y
-        self.x_anthill = random.randint(0, self.num_cells_x - 1)
-        self.y_anthill = random.randint(0, self.num_cells_y - 1)
         self.direction = random.choice(['up', 'down', 'left', 'right'])
         self.ants_counter = ANTS_IN_ANTHILL_MAX
-        self.positions_a = self.generate_positions_ants(existing_positions)
-        self.positions = self.generate_random_positions(existing_positions)
 
-    def generate_random_positions(self, existing_positions):
-        positions = set()
-        num_anthills = random.randint(1, 4)
-        while len(positions) < num_anthills:
-            position = (self.x_anthill, self.y_anthill)
-            if position not in existing_positions and position not in positions:
-                positions.add(position)
-        return positions
-
-    def generate_positions_ants(self, existing_positions):
-        positions_a = set()
-        num_ant = random.randint(1, 4)
-        while len(positions_a) < num_ant:
-            x_a = self.x_anthill - 1 or + 1
-            y_a = self.y_anthill - 1 or + 1
-            position = (x_a, y_a)
-            if positions_a not in existing_positions and position not in positions_a:
-                positions_a.add(position)
-        return positions_a
 
     def move_ants(self):
         if self.direction == 'up':
@@ -88,7 +78,7 @@ class Field:
         self.g = random.randint(0, 255)
         self.b = random.randint(0, 255)
         self.player = Player(self.cell_size, self.num_cells_x, self.num_cells_y, num_cells_x, num_cells_y)
-        self.ant = Ant(self.cell_size, self.num_cells_x, self.num_cells_y, {(self.player.x, self.player.y)})
+        self.anthill = Anthill(self.cell_size, self.num_cells_x, self.num_cells_y, {(self.player.x, self.player.y)})
         self.font = pygame.font.Font(None, self.cell_size)
         pygame.display.set_caption("поле")
 
@@ -116,7 +106,7 @@ class Field:
         self.screen.blit(scale_p, player_rect.topleft)
 
         # Отрисовка муравейников
-        for position in self.ant.positions:
+        for position in self.anthill.positions:
             scale = pygame.transform.scale(
             IMAGE_ANTHILL, (IMAGE_ANTHILL.get_width() // 10,
                 IMAGE_ANTHILL.get_height() // 10))
@@ -125,6 +115,19 @@ class Field:
                         offset_y + (position[1] + 5.2) * self.cell_size)
             )
             self.screen.blit(scale, anthill_rect.topleft)
+
+
+        for position in self.anthill.positions:
+            scale = pygame.transform.scale(
+            IMAGE_ANT, (IMAGE_ANT.get_width() // 10,
+                IMAGE_ANT.get_height() // 10))
+            ant_rect = IMAGE_ANT.get_rect(
+                center=(offset_x + (position[0] + 5.1) * self.cell_size,
+                        offset_y + (position[1] + 5.2) * self.cell_size)
+            )
+            self.screen.blit(scale, ant_rect.topleft)
+
+            
 
                 # инфа на экране
         font = pygame.font.Font(None, 72)
@@ -136,16 +139,6 @@ class Field:
         place2 = text2.get_rect(center=(500, 500))
         self.screen.blit(text2, place2)
                          
-        # Отрисовка муравьёв
-        for position in self.ant.positions_a:
-            scale = pygame.transform.scale(
-            IMAGE_ANT, (IMAGE_ANT.get_width() // 10,
-                IMAGE_ANT.get_height() // 10))
-            anthill_rect = IMAGE_ANT.get_rect(
-                center=(offset_x + (position[0] + 5.1) * self.cell_size,
-                        offset_y + (position[1] + 5.2) * self.cell_size)
-            )
-            self.screen.blit(scale, anthill_rect.topleft)
 
 
 class Window:
